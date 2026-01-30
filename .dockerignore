@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+LICENSE
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# Cache
+.cache
+opcache/
+
+# Development files
+test*.php
+simple-test.php
+test-frontend.php
+.vscode
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Data folder (will be generated)
+data/
+
+# Node modules (if any)
+node_modules/

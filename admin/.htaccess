@@ -1,0 +1,15 @@
+# Deny direct access to this directory
+Options -Indexes
+
+# Rewrite rules for admin panel
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Default to index.php
+    DirectoryIndex index.php
+
+    # Remove .php extension for cleaner URLs
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^(.*)$ $1.php [L]
+</IfModule>
