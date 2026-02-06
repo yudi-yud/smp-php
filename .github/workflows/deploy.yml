@@ -146,6 +146,7 @@ jobs:
           ENDSSH
 
       - name: Verify deployment
+        if: secrets.DEPLOY_URL != ''
         env:
           DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
         run: |
