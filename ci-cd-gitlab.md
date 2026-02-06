@@ -83,6 +83,8 @@ test:syntax:
     - find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; | grep -v "No syntax errors"
     - echo "PHP syntax check passed!"
   allow_failure: false
+  only:
+    - main
 
 test:docker-compose:
   stage: test
@@ -91,6 +93,8 @@ test:docker-compose:
     - docker compose config
     - echo "Docker Compose configuration is valid!"
   allow_failure: false
+  only:
+    - main
 
 # Stage 3: Deploy to Production
 deploy:production:
@@ -106,7 +110,8 @@ deploy:production:
   script:
     - echo "Deploying to production server..."
     - ssh $DEPLOY_USER@$DEPLOY_SERVER << 'EOF'
-      cd /path/to/project
+      set -e
+      cd /path/to/project || exit 1
       docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
       docker pull $IMAGE_NAME
       docker compose down
@@ -200,13 +205,20 @@ Copy isi private key dan paste ke GitLab variable `SSH_PRIVATE_KEY`.
 
 ## Deployment
 
+### Pipeline Triggers
+
+Pipeline akan berjalan otomatis saat:
+- Code di-push ke branch `main`
+
+Build dan test stage berjalan otomatis, sedangkan **deploy stage bersifat manual**.
+
 ### Manual Deployment
 
-Secara default, deploy stage diset sebagai **manual**. Untuk deploy:
+Deploy stage diset sebagai **manual** untuk keamanan. Untuk deploy:
 
 1. Buka **CI/CD > Pipelines** di GitLab
 2. Pilih pipeline yang ingin deploy
-3. Klik tombol **Play** pada job `deploy:production`
+3. Klik tombol **Play** (▶) pada job `deploy:production`
 4. Confirm deployment
 
 ### Automatic Deployment

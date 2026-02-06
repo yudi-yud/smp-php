@@ -60,6 +60,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -136,7 +137,7 @@ jobs:
           docker compose config > /dev/null
           echo "Docker Compose configuration is valid!"
 
-      - name: Security check (optional)
+      - name: Security check
         run: |
           echo "Running basic security checks..."
           grep -r "eval(" --include="*.php" . && echo "WARNING: eval() found!" || echo "No eval() found - good!"
@@ -147,8 +148,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [build, test]
-    # Uncomment line below for manual deployment approval
-    # environment: production
+    environment: production
 
     steps:
       - name: Checkout code
@@ -278,48 +278,28 @@ Copy isi private key dan paste ke GitHub secret `SSH_PRIVATE_KEY`.
 
 ## Deployment
 
-### Automatic Deployment
+### Automatic & Manual Deployment
 
-Secara default, workflow akan berjalan otomatis saat:
-- Code di-push ke branch `main` atau `master`
-- Pull request dibuat ke branch `main` atau `master`
+Workflow akan berjalan **otomatis** saat:
+- Code di-push ke branch `main`
+- Pull request dibuat ke branch `main`
+
+Workflow juga bisa dipicu **manual** melalui:
+1. Buka **Actions** tab di repository
+2. Pilih workflow "Build, Test, and Deploy"
+3. Klik **Run workflow**
+4. Pilih branch dan klik **Run workflow**
 
 ### Manual Deployment Approval
 
-Untuk membuat deployment memerlukan approval manual:
+Secara default, deploy job menggunakan `environment: production`. Untuk menambahkan approval manual:
 
-1. Buat environment baru di **Settings > Environments**
-2. Klik **New environment**, beri nama `production`
+1. Buka **Settings > Environments**
+2. Klik pada environment `production`
 3. Enable **Required reviewers**
-4. Update workflow file, uncomment baris `environment: production`
+4. Pilih reviewer yang diperlukan
 
-### Manual Deployment Trigger
-
-Untuk memicu deployment secara manual, tambahkan workflow terpisah:
-
-```yaml
-# .github/workflows/manual-deploy.yml
-name: Manual Deploy
-
-on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-          - staging
-
-jobs:
-  deploy:
-    name: Manual Deploy to ${{ inputs.environment }}
-    runs-on: ubuntu-latest
-    steps:
-      # ... deployment steps sama seperti di atas ...
-```
+Setelah setup, setiap deployment akan memerlukan approval dari reviewer sebelum berjalan.
 
 ---
 

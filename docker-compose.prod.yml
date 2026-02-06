@@ -1,0 +1,71 @@
+services:
+  # Web Application (Apache + PHP 8.4) - Production
+  web:
+    image: ghcr.io/yudi-yud/smp-php:latest
+    container_name: smpn3_cipari_web
+    ports:
+      - "127.0.0.1:8000:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_NAME=smpn3_cipari
+      - DB_USER=smpn3_user
+      - DB_PASSWORD=smpn3_password_2024
+      - DB_CHARSET=utf8mb4
+    volumes:
+      - ./upload:/var/www/html/upload
+      - ./img:/var/www/html/img
+    restart: unless-stopped
+    networks:
+      - smpn3_network
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: smpn3_cipari_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_2024
+      MYSQL_DATABASE: smpn3_cipari
+      MYSQL_USER: smpn3_user
+      MYSQL_PASSWORD: smpn3_password_2024
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - smpn3_network
+
+  # phpMyAdmin (optional)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: smpn3_cipari_phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root_password_2024
+      UPLOAD_LIMIT: 100M
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - smpn3_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  smpn3_network:
+    driver: bridge
