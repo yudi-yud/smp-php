@@ -8,7 +8,7 @@
 <section class="principal-section">
     <div class="principal-card">
         <div class="principal-photo">
-            <!-- <img src="img/marul.jpg" alt="Kepala Sekolah" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>👨‍💼</span>'"> -->
+            <img src="img/marul.jpg" alt="Kepala Sekolah" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>👨‍💼</span>'">
         </div>
         <div class="principal-content">
             <h3><?= PRINCIPAL_NAME ?></h3>

@@ -18,7 +18,7 @@
                 </div>
                 <div class="logo-text">
                     <h1>SMPN 3 SATU ATAP CIPARI</h1>
-                    <p>Cipari, JAWA</p>
+                    <p>Cipari, JAWA TENGAH</p>
                 </div>
             </div>
             <ul class="nav-links">
