@@ -125,7 +125,7 @@ jobs:
           echo "Deploying to production server..."
           ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'ENDSSH'
             set -e
-            cd /home/yudi/smp-php || exit 1
+            cd /home/enoo/smp-php || exit 1
 
             # Login to GitHub Container Registry
             echo $GITHUB_TOKEN | docker login $REGISTRY -u $GITHUB_ACTOR --password-stdin
