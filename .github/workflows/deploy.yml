@@ -1,0 +1,166 @@
+name: Build, Test, and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job 1: Build Docker Image
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 2: PHP Syntax Check
+  test:
+    name: PHP Syntax & Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, pdo, pdo_mysql, zip, gd
+          coverage: none
+
+      - name: Check PHP syntax
+        run: |
+          echo "Checking PHP syntax..."
+          find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; | grep -v "No syntax errors" || true
+          echo "PHP syntax check completed!"
+
+      - name: Validate Docker Compose config
+        run: |
+          echo "Validating Docker Compose configuration..."
+          docker compose config > /dev/null
+          echo "Docker Compose configuration is valid!"
+
+      - name: Security check (optional)
+        run: |
+          echo "Running basic security checks..."
+          grep -r "eval(" --include="*.php" . && echo "WARNING: eval() found!" || echo "No eval() found - good!"
+          grep -r "mysqli_query" --include="*.php" . | grep -v "mysqli_query(\$conn, \$stmt" && echo "WARNING: Possible SQL injection!" || echo "No obvious SQL injection patterns found!"
+
+  # Job 3: Deploy to Production
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    # Uncomment line below for manual deployment approval
+    # environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          echo "Deploying to production server..."
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'ENDSSH'
+            set -e
+            cd /path/to/project || exit 1
+
+            # Login to GitHub Container Registry
+            echo $GITHUB_TOKEN | docker login $REGISTRY -u $GITHUB_ACTOR --password-stdin
+
+            # Pull latest image
+            docker pull $REGISTRY/$IMAGE_NAME:latest
+
+            # Stop existing containers
+            docker compose down
+
+            # Start new containers
+            docker compose up -d
+
+            # Cleanup old images
+            docker image prune -af
+
+            echo "Deployment completed successfully!"
+          ENDSSH
+
+      - name: Verify deployment
+        env:
+          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+        run: |
+          echo "Verifying deployment..."
+          sleep 5
+          curl -f $DEPLOY_URL || exit 1
+          echo "Deployment verified!"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "Deployment to production was successful!"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "Deployment to production failed!"

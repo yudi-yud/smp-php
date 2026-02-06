@@ -71,7 +71,6 @@ build:
     - docker push $IMAGE_LATEST
   only:
     - main
-    - master
 
 # Stage 2: Test
 test:syntax:
@@ -117,7 +116,6 @@ deploy:production:
       EOF
   only:
     - main
-    - master
   when: manual
   environment:
     name: production
