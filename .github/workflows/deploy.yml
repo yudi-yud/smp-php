@@ -119,7 +119,7 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
           echo "Deploying to production server..."
@@ -134,10 +134,10 @@ jobs:
             docker pull $REGISTRY/$IMAGE_NAME:latest
 
             # Stop existing containers
-            docker compose down
+            docker compose -f docker-compose.prod.yml down
 
             # Start new containers
-            docker compose up -d
+            docker compose -f docker-compose.prod.yml up -d
 
             # Cleanup old images
             docker image prune -af
