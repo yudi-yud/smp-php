@@ -123,7 +123,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
           echo "Deploying to production server..."
-          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << ENDSSH
             set -e
             cd /home/enoo/smp-php || exit 1
 
