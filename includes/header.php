@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
     <header>
         <nav>
@@ -16,7 +18,7 @@
                 </div>
                 <div class="logo-text">
                     <h1>SMPN 3 SATU ATAP CIPARI</h1>
-                    <p>Cipari, JAWA TENGAH</p>
+                    <p>Cipari, JAWA</p>
                 </div>
             </div>
             <ul class="nav-links">
