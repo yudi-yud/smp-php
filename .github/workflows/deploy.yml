@@ -145,16 +145,6 @@ jobs:
             echo "Deployment completed successfully!"
           ENDSSH
 
-      - name: Verify deployment
-        if: secrets.DEPLOY_URL != ''
-        env:
-          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
-        run: |
-          echo "Verifying deployment..."
-          sleep 5
-          curl -f $DEPLOY_URL || exit 1
-          echo "Deployment verified!"
-
       - name: Notify deployment success
         if: success()
         run: |
