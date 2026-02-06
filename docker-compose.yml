@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   # Web Application (Apache + PHP 8.4)
   web:
     build: .
     container_name: smpn3_cipari_web
     ports:
-      - "80:80"
+      - "127.0.0.1:8000:80"
     depends_on:
       db:
         condition: service_healthy
@@ -34,8 +32,7 @@ services:
       MYSQL_PASSWORD: smpn3_password_2024
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
-    ports:
-      - "3306:3306"
+    # Port 3306 tidak perlu diekspos karena db hanya diakses dari dalam container network
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro

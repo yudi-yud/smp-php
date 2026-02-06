@@ -1,4 +1,5 @@
 <?php
+
 /**
  * News Section - Berita & pengumuman
  */
@@ -34,7 +35,7 @@ if (empty($news_items)) {
 }
 ?>
 
-<section class="news">
+<section class="news" id="news">
     <div class="news-container">
         <div class="section-header">
             <div class="section-label">Berita</div>
@@ -46,20 +47,33 @@ if (empty($news_items)) {
                 <?php
                 // Format date if it's a timestamp, otherwise use as-is
                 $newsDate = isset($news['published_at']) ? date('d M Y', strtotime($news['published_at'])) : ($news['date'] ?? '');
-                $newsLink = isset($news['slug']) ? 'berita/' . htmlspecialchars($news['slug']) : (isset($news['link']) ? htmlspecialchars($news['link']) : '#');
+                $newsLink = isset($news['slug']) ? 'berita.php?slug=' . htmlspecialchars($news['slug']) : (isset($news['link']) ? htmlspecialchars($news['link']) : '#');
+                $hasSlug = isset($news['slug']);
                 ?>
-                <div class="news-card">
+                <div class="news-card" <?= $hasSlug ? 'onclick="window.location.href=\'' . $newsLink . '\'"' : '' ?>>
                     <div class="news-image">
-                        <?= htmlspecialchars($news['icon'] ?? '') ?>
+                        <?= htmlspecialchars($news['icon'] ?? '📰') ?>
                         <span class="news-date"><?= htmlspecialchars($newsDate) ?></span>
                     </div>
                     <div class="news-content">
                         <h3><?= htmlspecialchars($news['title'] ?? '') ?></h3>
                         <p><?= htmlspecialchars($news['description'] ?? '') ?></p>
-                        <a href="<?= $newsLink ?>" class="news-link">Baca Selengkapnya →</a>
+                        <a href="<?= $newsLink ?>" class="news-link" onclick="event.stopPropagation()">Baca Selengkapnya →</a>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
     </div>
 </section>
+
+<style>
+    .news-card {
+        cursor: pointer;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .news-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+</style>

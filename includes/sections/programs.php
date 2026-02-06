@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Programs Section - Program unggulan sekolah
  */
@@ -48,7 +49,11 @@ if (empty($programs)) {
             <?php foreach ($programs as $program): ?>
                 <?php
                 // Parse features if stored as JSON or use directly
-                $featuresList = isset($program['features']) ? json_decode($program['features'], true) : [];
+                $featuresList = isset($program['features']) ? $program['features'] : [];
+                // Only decode if it's a JSON string, not already an array
+                if (is_string($featuresList)) {
+                    $featuresList = json_decode($featuresList, true);
+                }
                 if (!is_array($featuresList)) {
                     $featuresList = [];
                 }
@@ -61,11 +66,11 @@ if (empty($programs)) {
                         <h3 class="program-title"><?= htmlspecialchars($program['title'] ?? '') ?></h3>
                         <p class="program-description"><?= htmlspecialchars($program['description'] ?? '') ?></p>
                         <?php if (!empty($featuresList)): ?>
-                        <ul class="program-features">
-                            <?php foreach ($featuresList as $feature): ?>
-                                <li><?= htmlspecialchars($feature) ?></li>
-                            <?php endforeach; ?>
-                        </ul>
+                            <ul class="program-features">
+                                <?php foreach ($featuresList as $feature): ?>
+                                    <li><?= htmlspecialchars($feature) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
                         <?php endif; ?>
                     </div>
                 </div>

@@ -11,10 +11,10 @@ if (!defined('APP_ROOT')) {
 }
 
 // Database Configuration Constants
-define('DB_HOST', 'localhost');
+define('DB_HOST', 'smpn3_cipari_db');
 define('DB_NAME', 'smpn3_cipari');
-define('DB_USER', 'root');
-define('DB_PASS', '1234');
+define('DB_USER', 'smpn3_user');
+define('DB_PASS', 'smpn3_password_2024');
 define('DB_CHARSET', 'utf8mb4');
 
 /**
@@ -44,7 +44,6 @@ function getDB()
 
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
-            // Log error and show user-friendly message
             error_log("Database Connection Error: " . $e->getMessage());
 
             if (defined('DEBUG_MODE') && DEBUG_MODE) {
@@ -104,7 +103,7 @@ function startSecureSession()
     if (session_status() === PHP_SESSION_NONE) {
         ini_set('session.cookie_httponly', 1);
         ini_set('session.use_only_cookies', 1);
-        ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
+        ini_set('session.cookie_secure', 0);
         session_start();
     }
 }

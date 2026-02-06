@@ -32,6 +32,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
     $sort_order = (int)($_POST['sort_order'] ?? 0);
     $edit_id = (int)($_POST['edit_id'] ?? 0);
 
+    // Handle file upload
+    $uploadedImage = '';
+    if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['image_file'];
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        $maxSize = 5 * 1024 * 1024; // 5MB
+
+        // Validate file type
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($mimeType, $allowedTypes)) {
+            $message = 'Tipe file tidak diizinkan. Hanya JPG, PNG, GIF, dan WebP.';
+            $messageType = 'error';
+        } elseif ($file['size'] > $maxSize) {
+            $message = 'Ukuran file terlalu besar. Maksimal 5MB.';
+            $messageType = 'error';
+        } else {
+            // Create upload directory if not exists
+            $uploadDir = '../img/gallery/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            // Generate unique filename
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $filename = uniqid('gallery_', true) . '.' . $ext;
+            $filepath = $uploadDir . $filename;
+
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                $uploadedImage = 'img/gallery/' . $filename;
+            } else {
+                $message = 'Gagal mengupload file.';
+                $messageType = 'error';
+            }
+        }
+    }
+
+    // Use uploaded image if available, otherwise use manual input
+    if (!empty($uploadedImage)) {
+        $image = $uploadedImage;
+    }
+
     if (empty($title) || empty($image)) {
         $message = 'Judul dan nama gambar wajib diisi.';
         $messageType = 'error';
@@ -111,7 +156,7 @@ $csrf_token = generateCSRFToken();
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
                         <input type="hidden" name="edit_id" value="<?= $edit_data['id'] ?? '' ?>">
 
@@ -133,11 +178,25 @@ $csrf_token = generateCSRFToken();
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Nama File Gambar *</label>
-                            <input type="text" name="image" class="form-control" required
+                            <label class="form-label">Upload Gambar</label>
+                            <input type="file" name="image_file" id="image_file" class="form-control" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" onchange="previewImage(this)">
+                            <small class="text-muted">Upload gambar baru (JPG, PNG, GIF, WebP - Maks 5MB)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Atau Masukkan Path Gambar *</label>
+                            <input type="text" name="image" id="image_path" class="form-control"
                                 value="<?= htmlspecialchars($edit_data['image'] ?? $_POST['image'] ?? '') ?>"
                                 placeholder="img/gallery/nama-file.jpg">
-                            <small class="text-muted">Masukkan path relatif gambar dari folder root</small>
+                            <small class="text-muted">Masukkan path relatif gambar dari folder root (biarkan kosong jika upload file)</small>
+                        </div>
+
+                        <div class="form-group" id="preview-container" style="<?= ($edit_data && $edit_data['image']) ? '' : 'display: none;' ?>">
+                            <label class="form-label">Preview Gambar</label>
+                            <div style="margin-top: 10px;">
+                                <img id="image-preview" src="<?= ($edit_data && $edit_data['image']) ? '../' . htmlspecialchars($edit_data['image']) : '' ?>"
+                                    style="max-width: 300px; max-height: 300px; object-fit: contain; border-radius: 8px; border: 1px solid #ddd;">
+                            </div>
                         </div>
 
                         <div class="form-row">
@@ -249,6 +308,43 @@ $csrf_token = generateCSRFToken();
     </main>
 
     <script src="assets/js/admin.js"></script>
+    <script>
+        function previewImage(input) {
+            const previewContainer = document.getElementById('preview-container');
+            const preview = document.getElementById('image-preview');
+            const imagePath = document.getElementById('image_path');
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                    imagePath.value = ''; // Clear manual input when file is selected
+                }
+                reader.readAsDataURL(input.files[0]);
+            } else if (imagePath.value) {
+                preview.src = '../' + imagePath.value;
+                previewContainer.style.display = 'block';
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        }
+
+        // Show preview when image path changes
+        document.getElementById('image_path').addEventListener('input', function() {
+            const previewContainer = document.getElementById('preview-container');
+            const preview = document.getElementById('image-preview');
+            const fileInput = document.getElementById('image_file');
+
+            if (this.value) {
+                preview.src = '../' + this.value;
+                previewContainer.style.display = 'block';
+                fileInput.value = ''; // Clear file input when manual path is entered
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 
 </html>
