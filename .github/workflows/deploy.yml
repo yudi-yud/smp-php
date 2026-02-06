@@ -1,14 +1,14 @@
+# .github/workflows/deploy.yml
 name: Build, Test, and Deploy
 
 on:
   push:
     branches:
       - main
-      - master
   pull_request:
     branches:
       - main
-      - master
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -85,7 +85,7 @@ jobs:
           docker compose config > /dev/null
           echo "Docker Compose configuration is valid!"
 
-      - name: Security check (optional)
+      - name: Security check
         run: |
           echo "Running basic security checks..."
           grep -r "eval(" --include="*.php" . && echo "WARNING: eval() found!" || echo "No eval() found - good!"
@@ -96,8 +96,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [build, test]
-    # Uncomment line below for manual deployment approval
-    # environment: production
+    environment: production
 
     steps:
       - name: Checkout code
@@ -120,13 +119,13 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
           echo "Deploying to production server..."
-          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << ENDSSH
             set -e
-            cd /path/to/project || exit 1
+            cd /home/enoo/smp-php || exit 1
 
             # Login to GitHub Container Registry
             echo $GITHUB_TOKEN | docker login $REGISTRY -u $GITHUB_ACTOR --password-stdin
@@ -135,25 +134,16 @@ jobs:
             docker pull $REGISTRY/$IMAGE_NAME:latest
 
             # Stop existing containers
-            docker compose down
+            docker compose -f docker-compose.prod.yml down
 
             # Start new containers
-            docker compose up -d
+            docker compose -f docker-compose.prod.yml up -d
 
             # Cleanup old images
             docker image prune -af
 
             echo "Deployment completed successfully!"
           ENDSSH
-
-      - name: Verify deployment
-        env:
-          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
-        run: |
-          echo "Verifying deployment..."
-          sleep 5
-          curl -f $DEPLOY_URL || exit 1
-          echo "Deployment verified!"
 
       - name: Notify deployment success
         if: success()

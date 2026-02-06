@@ -1,0 +1,84 @@
+# .gitlab-ci.yml
+image: docker:27.0.0-cli
+
+services:
+  - docker:27.0.0-dind
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+
+before_script:
+  - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+
+# Stage 1: Build Docker Image
+build:
+  stage: build
+  script:
+    - echo "Building Docker image..."
+    - docker build -t $IMAGE_NAME -t $IMAGE_LATEST .
+    - docker push $IMAGE_NAME
+    - docker push $IMAGE_LATEST
+  only:
+    - main
+
+# Stage 2: Test
+test:syntax:
+  stage: test
+  image: php:8.4-cli
+  before_script:
+    - apk add --no-cache composer
+  script:
+    - echo "Checking PHP syntax..."
+    - find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; | grep -v "No syntax errors"
+    - echo "PHP syntax check passed!"
+  allow_failure: false
+  only:
+    - main
+
+test:docker-compose:
+  stage: test
+  script:
+    - echo "Testing Docker Compose configuration..."
+    - docker compose config
+    - echo "Docker Compose configuration is valid!"
+  allow_failure: false
+  only:
+    - main
+
+# Stage 3: Deploy to Production
+deploy:production:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_SERVER >> ~/.ssh/known_hosts
+  script:
+    - echo "Deploying to production server..."
+    - ssh $DEPLOY_USER@$DEPLOY_SERVER << EOF
+      set -e
+      cd /home/yudi/smp-php || exit 1
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+      docker pull $IMAGE_NAME
+      docker compose down
+      IMAGE_TAG=$CI_COMMIT_SHORT_SHA docker compose up -d
+      docker image prune -f
+      echo "Deployment completed!"
+      EOF
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    url: https://smpn3cipari.sch.id
